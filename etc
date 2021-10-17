@@ -2,6 +2,7 @@ import configparser
 from datetime import datetime
 import os
 from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
 from pyspark.sql.types import TimestampType
 from pyspark.sql.functions import udf, col
 from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, date_format, dayofweek
@@ -58,11 +59,11 @@ def process_log_data(spark, input_data, output_data):
     
     users_table.write.mode('overwrite').parquet(output_data+'users_info')
 
-    get_timestamp = udf(lambda x: datetime.fromtimestamp(x/1000).isoformat())
+    get_timestamp = udf(lambda x: datetime.fromtimestamp(x/1000), TimestampType())
     
     df_update = df.filter(df.page == 'NextSong').select(['ts', 'userId', 'level', 'song', 'artist', 'sessionId', 'location', 'userAgent'])
     
-    df_update = df_update.withColumn("start_time", get_timestamp(df_update.ts).cast(TimestampType())
+    df_update = df_update.withColumn("start_time", get_timestamp(df_update.ts))
                                      
     time_table = df_update.select('start_time')
                                      
